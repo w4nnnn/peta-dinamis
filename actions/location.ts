@@ -8,6 +8,7 @@ import { desc, eq } from 'drizzle-orm';
 export interface LocationData {
     name: string;
     description: string;
+    category: string;
     latitude: number;
     longitude: number;
 }

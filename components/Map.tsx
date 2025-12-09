@@ -1,5 +1,3 @@
-'use client';
-
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMapEvents } from 'react-leaflet';
 import { LatLngExpression, LatLngTuple, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -7,37 +5,67 @@ import { useState, useEffect } from 'react';
 import L from 'leaflet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { addLocation } from '@/actions/location';
 import { toast } from 'sonner';
-import { MapPin } from 'lucide-react';
+import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2 } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { LocationForm } from './LocationForm';
 
-// Create a custom icon using Lucide React
-const createCustomIcon = () => {
+// --- Custom Icon Factory ---
+const createCustomIcon = (category: string) => {
+    let IconComponent = MapPin;
+    let color = '#ef4444'; // red-500
+
+    switch (category) {
+        case 'pemerintahan':
+            IconComponent = Building2;
+            color = '#3b82f6'; // blue-500
+            break;
+        case 'fasilitas_umum':
+            IconComponent = Users;
+            color = '#f97316'; // orange-500
+            break;
+        case 'taman':
+            IconComponent = Trees;
+            color = '#22c55e'; // green-500
+            break;
+        case 'sekolah':
+            IconComponent = School;
+            color = '#eab308'; // yellow-500
+            break;
+        default:
+            IconComponent = MapPin;
+            color = '#ef4444'; // red-500
+    }
+
+    // Google Maps Style Pin with Icon inside
     const iconHtml = renderToStaticMarkup(
-        <div className="text-red-500 filter drop-shadow-md">
-            <MapPin size={32} fill="currentColor" strokeWidth={2} />
+        <div className="relative flex items-center justify-center w-[40px] h-[40px]">
+            {/* Pin Shape */}
+            <svg viewBox="0 0 384 512" fill={color} className="w-10 h-10 drop-shadow-md">
+                <path d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0z" />
+            </svg>
+            {/* Creating a white circle background for icon */}
+            <div className="absolute top-[6px] bg-white/20 rounded-full w-6 h-6 flex items-center justify-center">
+                <IconComponent size={16} strokeWidth={2.5} color="white" />
+            </div>
         </div>
     );
 
     return new DivIcon({
         html: iconHtml,
-        className: 'bg-transparent', // Remove default square background
-        iconSize: [32, 32],
-        iconAnchor: [16, 32], // Bottom center
-        popupAnchor: [0, -32],
+        className: 'bg-transparent',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40], // Center bottom
+        popupAnchor: [0, -40],
     });
 };
-
-const customIcon = createCustomIcon();
 
 export interface Location {
     id: number;
     name: string;
     description: string | null;
+    category: string;
     latitude: number;
     longitude: number;
     createdAt: Date;
@@ -48,12 +76,11 @@ export interface MapProps {
     locations: Location[];
 }
 
-
 export default function Map({ geoJson, locations }: MapProps) {
     // Dialog states
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // New: Confirmation dialog
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     // Context Menu states
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; mode: 'map' | 'marker'; data?: any } | null>(null);
@@ -61,7 +88,8 @@ export default function Map({ geoJson, locations }: MapProps) {
     // Data states
     const [selectedPos, setSelectedPos] = useState<LatLngTuple | null>(null);
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-    const [formData, setFormData] = useState({ name: '', description: '' });
+    // Add default category
+    const [formData, setFormData] = useState({ name: '', description: '', category: 'lainnya' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // ... (GeoJSON parsing logic remains same)
@@ -74,7 +102,6 @@ export default function Map({ geoJson, locations }: MapProps) {
 
     // --- Actions ---
 
-    // 1. Map Right Click -> Show Context Menu (Add Mode)
     const handleMapContextMenu = (latlng: LatLngTuple, event: L.LeafletMouseEvent) => {
         setContextMenu({
             x: event.originalEvent.clientX,
@@ -84,9 +111,8 @@ export default function Map({ geoJson, locations }: MapProps) {
         });
     };
 
-    // 2. Marker Right Click -> Show Context Menu (Marker Mode)
     const handleMarkerContextMenu = (location: Location, event: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(event); // Prevent map context menu
+        L.DomEvent.stopPropagation(event);
         setContextMenu({
             x: event.originalEvent.clientX,
             y: event.originalEvent.clientY,
@@ -95,28 +121,25 @@ export default function Map({ geoJson, locations }: MapProps) {
         });
     };
 
-    // 3. Open Add Dialog from Context Menu
     const openAddDialog = () => {
         if (contextMenu?.mode === 'map' && contextMenu.data) {
             setSelectedPos(contextMenu.data);
-            setFormData({ name: '', description: '' });
+            setFormData({ name: '', description: '', category: 'lainnya' });
             setIsAddDialogOpen(true);
             setContextMenu(null);
         }
     };
 
-    // 4. Open Edit Dialog from Context Menu
     const openEditDialog = () => {
         if (contextMenu?.mode === 'marker' && contextMenu.data) {
             const loc = contextMenu.data as Location;
             setSelectedLocation(loc);
-            setFormData({ name: loc.name, description: loc.description || '' });
+            setFormData({ name: loc.name, description: loc.description || '', category: loc.category || 'lainnya' });
             setIsEditDialogOpen(true);
             setContextMenu(null);
         }
     };
 
-    // 5. Open Delete Dialog from Context Menu
     const openDeleteDialog = () => {
         if (contextMenu?.mode === 'marker' && contextMenu.data) {
             setSelectedLocation(contextMenu.data as Location);
@@ -136,6 +159,7 @@ export default function Map({ geoJson, locations }: MapProps) {
             const result = await addLocation({
                 name: formData.name,
                 description: formData.description,
+                category: formData.category,
                 latitude: selectedPos[0],
                 longitude: selectedPos[1],
             });
@@ -148,14 +172,12 @@ export default function Map({ geoJson, locations }: MapProps) {
         } catch (error) { toast.error('Terjadi kesalahan'); } finally { setIsSubmitting(false); }
     };
 
-    // Import updateLocation and deleteLocation at top of file (handled later, assuming available)
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedLocation) return;
 
         setIsSubmitting(true);
         try {
-            // Need to import updateLocation
             const { updateLocation } = await import('@/actions/location');
             const result = await updateLocation(selectedLocation.id, {
                 ...formData,
@@ -176,7 +198,6 @@ export default function Map({ geoJson, locations }: MapProps) {
         if (!selectedLocation) return;
         setIsSubmitting(true);
         try {
-            // Need to import deleteLocation
             const { deleteLocation } = await import('@/actions/location');
             const result = await deleteLocation(selectedLocation.id);
 
@@ -189,7 +210,6 @@ export default function Map({ geoJson, locations }: MapProps) {
         } catch (error) { toast.error('Terjadi kesalahan'); } finally { setIsSubmitting(false); }
     };
 
-    // Global click listener to close context menu
     useEffect(() => {
         const checkClickedOutside = () => setContextMenu(null);
         document.addEventListener('click', checkClickedOutside);
@@ -207,23 +227,26 @@ export default function Map({ geoJson, locations }: MapProps) {
                 >
                     {contextMenu.mode === 'map' ? (
                         <div
-                            className="text-sm px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm flex items-center"
+                            className="text-sm px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm flex items-center gap-2"
                             onClick={openAddDialog}
                         >
+                            <Plus size={16} />
                             Tambah Lokasi
                         </div>
                     ) : (
                         <>
                             <div
-                                className="text-sm px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm flex items-center"
+                                className="text-sm px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm flex items-center gap-2"
                                 onClick={openEditDialog}
                             >
+                                <Edit size={16} />
                                 Edit Lokasi
                             </div>
                             <div
-                                className="text-sm px-2 py-1.5 cursor-pointer hover:bg-destructive hover:text-destructive-foreground rounded-sm flex items-center text-destructive"
+                                className="text-sm px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-destructive-foreground rounded-sm flex items-center text-destructive gap-2"
                                 onClick={openDeleteDialog}
                             >
+                                <Trash2 size={16} />
                                 Hapus Lokasi
                             </div>
                         </>
@@ -231,7 +254,7 @@ export default function Map({ geoJson, locations }: MapProps) {
                 </div>
             )}
 
-            <MapContainer center={center} zoom={16} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+            <MapContainer center={center} zoom={16} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} attributionControl={false}>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -243,7 +266,7 @@ export default function Map({ geoJson, locations }: MapProps) {
                     <Marker
                         key={loc.id}
                         position={[loc.latitude, loc.longitude]}
-                        icon={customIcon}
+                        icon={createCustomIcon(loc.category || 'lainnya')}
                         eventHandlers={{
                             contextmenu: (e) => handleMarkerContextMenu(loc, e)
                         }}
@@ -251,12 +274,14 @@ export default function Map({ geoJson, locations }: MapProps) {
                         <Popup>
                             <div className="p-2 min-w-[150px]">
                                 <h3 className="font-bold text-lg mb-1">{loc.name}</h3>
+                                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                    {loc.category?.replace('_', ' ') || 'Lainnya'}
+                                </div>
                                 <p className="text-sm text-gray-600">{loc.description}</p>
                             </div>
                         </Popup>
                     </Marker>
                 ))}
-
 
                 <MapContextMenuHandler onContextMenu={(e, latlng) => handleMapContextMenu(latlng, e)} />
             </MapContainer>
@@ -304,21 +329,3 @@ function MapContextMenuHandler({ onContextMenu }: { onContextMenu: (e: L.Leaflet
     return null;
 }
 
-// Reusable Form
-function LocationForm({ formData, setFormData, onSubmit, isSubmitting, submitLabel = "Simpan Lokasi" }: any) {
-    return (
-        <form onSubmit={onSubmit} className="space-y-4 pt-4">
-            <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="name">Nama Lokasi</Label>
-                <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
-            </div>
-            <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="desc">Deskripsi</Label>
-                <Textarea id="desc" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
-            </div>
-            <DialogFooter>
-                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Memproses...' : submitLabel}</Button>
-            </DialogFooter>
-        </form>
-    )
-}
