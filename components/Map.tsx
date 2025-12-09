@@ -7,36 +7,46 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { addLocation } from '@/actions/location';
 import { toast } from 'sonner';
-import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2 } from 'lucide-react';
+import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useMemo } from 'react';
 import { LocationForm } from './LocationForm';
 
+const CATEGORIES = [
+    { value: "all", label: "Semua Kategori" },
+    { value: "pemerintahan", label: "Pemerintahan" },
+    { value: "pendidikan", label: "Pendidikan" },
+    { value: "kesehatan", label: "Kesehatan" },
+    { value: "ibadah", label: "Ibadah" },
+    { value: "kuliner", label: "Kuliner" },
+    { value: "warkop", label: "Warkop" },
+    { value: "perbelanjaan", label: "Perbelanjaan" },
+    { value: "keamanan", label: "Keamanan" },
+    { value: "taman", label: "Taman" },
+    { value: "default", label: "Lainnya" },
+];
+
+// --- Custom Icon Factory ---
 // --- Custom Icon Factory ---
 const createCustomIcon = (category: string) => {
-    let IconComponent = MapPin;
-    let color = '#ef4444'; // red-500
+    const iconMap: Record<string, { icon: any; color: string }> = {
+        pemerintahan: { icon: Landmark, color: "#2563eb" }, // text-blue-600
+        pendidikan: { icon: School, color: "#4f46e5" }, // text-indigo-600
+        kesehatan: { icon: Stethoscope, color: "#ef4444" }, // text-red-500
+        ibadah: { icon: BookHeart, color: "#059669" }, // text-emerald-600
+        kuliner: { icon: Utensils, color: "#f97316" }, // text-orange-500
+        warkop: { icon: Coffee, color: "#b45309" }, // text-amber-700
+        perbelanjaan: { icon: Store, color: "#0ea5e9" }, // text-sky-500
+        keamanan: { icon: ShieldCheck, color: "#334155" }, // text-slate-700
+        taman: { icon: Trees, color: "#16a34a" }, // text-green-600
+        default: { icon: Circle, color: "#6b7280" }, // text-gray-500
+    };
 
-    switch (category) {
-        case 'pemerintahan':
-            IconComponent = Building2;
-            color = '#3b82f6'; // blue-500
-            break;
-        case 'fasilitas_umum':
-            IconComponent = Users;
-            color = '#f97316'; // orange-500
-            break;
-        case 'taman':
-            IconComponent = Trees;
-            color = '#22c55e'; // green-500
-            break;
-        case 'sekolah':
-            IconComponent = School;
-            color = '#eab308'; // yellow-500
-            break;
-        default:
-            IconComponent = MapPin;
-            color = '#ef4444'; // red-500
-    }
+    const config = iconMap[category] || iconMap.default;
+    const IconComponent = config.icon;
+    const color = config.color;
 
     // Google Maps Style Pin with Icon inside
     const iconHtml = renderToStaticMarkup(
@@ -89,8 +99,33 @@ export default function Map({ geoJson, locations }: MapProps) {
     const [selectedPos, setSelectedPos] = useState<LatLngTuple | null>(null);
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
     // Add default category
-    const [formData, setFormData] = useState({ name: '', description: '', category: 'lainnya' });
+    const [formData, setFormData] = useState({ name: '', description: '', category: 'default' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Search & Filter states
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('all');
+
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Filter locations
+    const filteredLocations = useMemo(() => {
+        return locations.filter(loc => {
+            const matchesSearch = loc.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                (loc.description && loc.description.toLowerCase().includes(debouncedSearch.toLowerCase()));
+
+            const matchesCategory = categoryFilter === 'all' || loc.category === categoryFilter;
+
+            return matchesSearch && matchesCategory;
+        });
+    }, [locations, debouncedSearch, categoryFilter]);
 
     // ... (GeoJSON parsing logic remains same)
     const feature = geoJson.features[0];
@@ -124,7 +159,7 @@ export default function Map({ geoJson, locations }: MapProps) {
     const openAddDialog = () => {
         if (contextMenu?.mode === 'map' && contextMenu.data) {
             setSelectedPos(contextMenu.data);
-            setFormData({ name: '', description: '', category: 'lainnya' });
+            setFormData({ name: '', description: '', category: 'default' });
             setIsAddDialogOpen(true);
             setContextMenu(null);
         }
@@ -134,7 +169,7 @@ export default function Map({ geoJson, locations }: MapProps) {
         if (contextMenu?.mode === 'marker' && contextMenu.data) {
             const loc = contextMenu.data as Location;
             setSelectedLocation(loc);
-            setFormData({ name: loc.name, description: loc.description || '', category: loc.category || 'lainnya' });
+            setFormData({ name: loc.name, description: loc.description || '', category: loc.category || 'default' });
             setIsEditDialogOpen(true);
             setContextMenu(null);
         }
@@ -217,7 +252,44 @@ export default function Map({ geoJson, locations }: MapProps) {
     }, []);
 
     return (
-        <div className="relative w-full h-[85vh] border rounded-lg overflow-hidden shadow-xl">
+        <div className="relative w-full h-full overflow-hidden">
+            {/* Floating Search & Filter Control */}
+            <div className="absolute top-4 right-4 z-[5000] w-full max-w-sm">
+                <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-3 rounded-lg shadow-lg border mx-4 md:mx-0 space-y-3">
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Cari lokasi..."
+                                className="pl-8 bg-background/50"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                            <SelectTrigger className="w-full bg-background/50">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="h-4 w-4" />
+                                    <SelectValue placeholder="Pilih Kategori" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {CATEGORIES.map((cat) => (
+                                    <SelectItem key={cat.value} value={cat.value}>
+                                        {cat.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground px-1">
+                        Menampilkan {filteredLocations.length} lokasi
+                    </div>
+                </div>
+            </div>
             {/* Custom Context Menu */}
             {contextMenu && (
                 <div
@@ -262,11 +334,11 @@ export default function Map({ geoJson, locations }: MapProps) {
                 <Polygon positions={maskPositions as any} pathOptions={{ color: 'transparent', fillColor: 'black', fillOpacity: 0.7 }} />
                 <Polygon positions={hole} pathOptions={{ color: '#ec4899', weight: 2, fill: false, dashArray: '5, 10' }} />
 
-                {locations.map((loc) => (
+                {filteredLocations.map((loc) => (
                     <Marker
                         key={loc.id}
                         position={[loc.latitude, loc.longitude]}
-                        icon={createCustomIcon(loc.category || 'lainnya')}
+                        icon={createCustomIcon(loc.category || 'default')}
                         eventHandlers={{
                             contextmenu: (e) => handleMarkerContextMenu(loc, e)
                         }}

@@ -19,19 +19,17 @@ export default async function Home() {
   const { data: locations } = await getLocations();
 
   return (
-    <main className="container mx-auto p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Peta Digital Bulusidokare</h1>
-          <p className="text-muted-foreground">Sistem Informasi Geografis Desa Bulusidokare</p>
-        </div>
-      </div>
+    <main className="relative w-screen h-screen overflow-hidden bg-background">
 
       {geoJson ? (
-        <MapWrapper geoJson={geoJson} locations={locations || []} />
+        <div className="w-full h-full">
+          <MapWrapper geoJson={geoJson} locations={locations || []} />
+        </div>
       ) : (
-        <div className="p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
-          Gagal memuat data peta dasar (GeoJSON tidak ditemukan).
+        <div className="flex items-center justify-center w-full h-full p-4">
+          <div className="p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
+            Gagal memuat data peta dasar (GeoJSON tidak ditemukan).
+          </div>
         </div>
       )}
 

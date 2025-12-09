@@ -39,10 +39,15 @@ export function LocationForm({ formData, setFormData, onSubmit, isSubmitting, su
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="pemerintahan">Pemerintahan</SelectItem>
-                        <SelectItem value="fasilitas_umum">Fasilitas Umum</SelectItem>
-                        <SelectItem value="taman">Taman & RTH</SelectItem>
-                        <SelectItem value="sekolah">Sekolah & Pendidikan</SelectItem>
-                        <SelectItem value="lainnya">Lainnya</SelectItem>
+                        <SelectItem value="pendidikan">Pendidikan</SelectItem>
+                        <SelectItem value="kesehatan">Kesehatan</SelectItem>
+                        <SelectItem value="ibadah">Ibadah</SelectItem>
+                        <SelectItem value="kuliner">Kuliner</SelectItem>
+                        <SelectItem value="warkop">Warkop</SelectItem>
+                        <SelectItem value="perbelanjaan">Perbelanjaan</SelectItem>
+                        <SelectItem value="keamanan">Keamanan</SelectItem>
+                        <SelectItem value="taman">Taman</SelectItem>
+                        <SelectItem value="default">Lainnya</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

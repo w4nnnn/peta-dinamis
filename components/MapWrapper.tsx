@@ -6,7 +6,7 @@ import { MapProps } from './Map';
 const Map = dynamic(() => import('@/components/Map'), {
     ssr: false,
     loading: () => (
-        <div className="w-full h-[85vh] bg-muted animate-pulse rounded-lg flex items-center justify-center border">
+        <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
             <div className="text-muted-foreground flex flex-col items-center gap-2">
                 <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
