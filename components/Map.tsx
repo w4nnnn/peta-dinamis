@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { addLocation } from '@/actions/location';
 import { toast } from 'sonner';
-import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck } from 'lucide-react';
+import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck, Info } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,8 +28,6 @@ const CATEGORIES = [
     { value: "default", label: "Lainnya" },
 ];
 
-// --- Custom Icon Factory ---
-// --- Custom Icon Factory ---
 const createCustomIcon = (category: string) => {
     const iconMap: Record<string, { icon: any; color: string }> = {
         pemerintahan: { icon: Landmark, color: "#2563eb" }, // text-blue-600
@@ -52,8 +50,13 @@ const createCustomIcon = (category: string) => {
     const iconHtml = renderToStaticMarkup(
         <div className="relative flex items-center justify-center w-[40px] h-[40px]">
             {/* Pin Shape */}
-            <svg viewBox="0 0 384 512" fill={color} className="w-10 h-10 drop-shadow-md">
-                <path d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0z" />
+            <svg viewBox="0 0 384 512" className="w-10 h-10 drop-shadow-md">
+                <path
+                    d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0z"
+                    fill={color}
+                    stroke="white"
+                    strokeWidth="12"
+                />
             </svg>
             {/* Creating a white circle background for icon */}
             <div className="absolute top-[6px] bg-white/20 rounded-full w-6 h-6 flex items-center justify-center">
@@ -285,8 +288,10 @@ export default function Map({ geoJson, locations }: MapProps) {
                         </Select>
                     </div>
 
-                    <div className="text-xs text-muted-foreground px-1">
-                        Menampilkan {filteredLocations.length} lokasi
+                    <div className="flex flex-col gap-1">
+                        <div className="text-xs text-muted-foreground px-1">
+                            Menampilkan {filteredLocations.length} lokasi
+                        </div>
                     </div>
                 </div>
             </div>
@@ -349,7 +354,33 @@ export default function Map({ geoJson, locations }: MapProps) {
                                 <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                                     {loc.category?.replace('_', ' ') || 'Lainnya'}
                                 </div>
-                                <p className="text-sm text-gray-600">{loc.description}</p>
+                                <p className="text-sm text-gray-600 mb-3">{loc.description}</p>
+
+                                <div className="grid grid-cols-2 gap-2 border-t pt-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 text-xs gap-1"
+                                        onClick={() => {
+                                            setSelectedLocation(loc);
+                                            setFormData({ name: loc.name, description: loc.description || '', category: loc.category || 'default' });
+                                            setIsEditDialogOpen(true);
+                                        }}
+                                    >
+                                        <Edit size={12} /> Edit
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="h-7 text-xs gap-1"
+                                        onClick={() => {
+                                            setSelectedLocation(loc);
+                                            setIsDeleteDialogOpen(true);
+                                        }}
+                                    >
+                                        <Trash2 size={12} /> Hapus
+                                    </Button>
+                                </div>
                             </div>
                         </Popup>
                     </Marker>
@@ -387,6 +418,12 @@ export default function Map({ geoJson, locations }: MapProps) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* TIP Badge */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:bottom-8 md:right-4 z-[400] bg-background/90 backdrop-blur border px-3 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs md:text-sm text-muted-foreground animate-in slide-in-from-bottom-5">
+                <Info size={16} className="text-blue-500" />
+                <span>Klik kanan / Tahan peta untuk tambah lokasi</span>
+            </div>
         </div>
     );
 }
