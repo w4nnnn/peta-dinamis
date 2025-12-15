@@ -1,18 +1,19 @@
-import { MapContainer, TileLayer, Polygon, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import { LatLngExpression, LatLngTuple, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { addLocation } from '@/actions/location';
 import { toast } from 'sonner';
-import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck, Info } from 'lucide-react';
+import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck, Info, X } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMemo } from 'react';
 import { LocationForm } from './LocationForm';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const CATEGORIES = [
     { value: "all", label: "Semua Kategori" },
@@ -109,6 +110,9 @@ export default function Map({ geoJson, locations }: MapProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [mapRef, setMapRef] = useState<L.Map | null>(null);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
 
     // Debounce search
     useEffect(() => {
@@ -118,17 +122,44 @@ export default function Map({ geoJson, locations }: MapProps) {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Filter locations
-    const filteredLocations = useMemo(() => {
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Search suggestions (tidak memfilter marker, hanya untuk dropdown)
+    const suggestions = useMemo(() => {
+        if (!debouncedSearch.trim()) return [];
         return locations.filter(loc => {
             const matchesSearch = loc.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
                 (loc.description && loc.description.toLowerCase().includes(debouncedSearch.toLowerCase()));
-
             const matchesCategory = categoryFilter === 'all' || loc.category === categoryFilter;
-
             return matchesSearch && matchesCategory;
-        });
+        }).slice(0, 8); // Max 8 suggestions
     }, [locations, debouncedSearch, categoryFilter]);
+
+    // Filter locations hanya berdasarkan kategori (semua marker tetap tampil)
+    const filteredLocations = useMemo(() => {
+        return locations.filter(loc => {
+            const matchesCategory = categoryFilter === 'all' || loc.category === categoryFilter;
+            return matchesCategory;
+        });
+    }, [locations, categoryFilter]);
+
+    // Fly to location
+    const flyToLocation = useCallback((loc: Location) => {
+        if (mapRef) {
+            mapRef.flyTo([loc.latitude, loc.longitude], 18, { duration: 1.5 });
+            setShowSuggestions(false);
+            setSearchQuery(loc.name);
+        }
+    }, [mapRef]);
 
     // ... (GeoJSON parsing logic remains same)
     const feature = geoJson.features[0];
@@ -259,17 +290,60 @@ export default function Map({ geoJson, locations }: MapProps) {
             {/* Floating Search & Filter Control */}
             <div className="absolute top-4 right-4 z-[5000] w-full max-w-sm">
                 <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-3 rounded-lg shadow-lg border mx-4 md:mx-0 space-y-3">
-                    <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
+                    {/* Search with Dropdown */}
+                    <div ref={searchContainerRef} className="relative">
+                        <div className="relative">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Cari lokasi..."
-                                className="pl-8 bg-background/50"
+                                className="pl-8 pr-8 bg-background/50"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setShowSuggestions(true);
+                                }}
+                                onFocus={() => setShowSuggestions(true)}
                             />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground hover:text-foreground"
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setShowSuggestions(false);
+                                    }}
+                                >
+                                    <X size={16} />
+                                </button>
+                            )}
                         </div>
+
+                        {/* Suggestions Dropdown */}
+                        {showSuggestions && suggestions.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg max-h-64 overflow-hidden z-[6000]">
+                                <ScrollArea className="max-h-64">
+                                    {suggestions.map((loc) => (
+                                        <div
+                                            key={loc.id}
+                                            className="px-3 py-2 hover:bg-accent cursor-pointer border-b last:border-b-0 flex items-center gap-2"
+                                            onClick={() => flyToLocation(loc)}
+                                        >
+                                            <MapPin size={14} className="text-muted-foreground flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-medium text-sm truncate">{loc.name}</div>
+                                                <div className="text-xs text-muted-foreground truncate">
+                                                    {loc.category?.replace('_', ' ') || 'Lainnya'}
+                                                    {loc.description && ` • ${loc.description}`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </ScrollArea>
+                            </div>
+                        )}
                     </div>
+
+                    {/* Category Filter */}
                     <div>
                         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                             <SelectTrigger className="w-full bg-background/50">
@@ -331,10 +405,11 @@ export default function Map({ geoJson, locations }: MapProps) {
                 </div>
             )}
 
-            <MapContainer center={center} zoom={16} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} attributionControl={false}>
+            <MapContainer center={center} zoom={16} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} attributionControl={false} ref={setMapRef}>
+                {/* Tile lokal dengan fallback ke online */}
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    url="/tiles/{z}/{x}/{y}.png"
+                    errorTileUrl="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <Polygon positions={maskPositions as any} pathOptions={{ color: 'transparent', fillColor: 'black', fillOpacity: 0.7 }} />
                 <Polygon positions={hole} pathOptions={{ color: '#ec4899', weight: 2, fill: false, dashArray: '5, 10' }} />
