@@ -24,7 +24,7 @@ const BOUNDS = {
 
 // Zoom levels yang akan didownload
 const MIN_ZOOM = 14;
-const MAX_ZOOM = 18;
+const MAX_ZOOM = 19;
 
 // Output directory
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'tiles');

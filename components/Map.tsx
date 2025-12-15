@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { addLocation } from '@/actions/location';
 import { toast } from 'sonner';
-import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck, Info, X } from 'lucide-react';
+import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck, Info, X, Trophy, Home } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,20 +16,39 @@ import { LocationForm } from './LocationForm';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const CATEGORIES = [
-    { value: "all", label: "Semua Kategori" },
-    { value: "pemerintahan", label: "Pemerintahan" },
-    { value: "pendidikan", label: "Pendidikan" },
-    { value: "kesehatan", label: "Kesehatan" },
-    { value: "ibadah", label: "Ibadah" },
-    { value: "kuliner", label: "Kuliner" },
-    { value: "warkop", label: "Warkop" },
-    { value: "perbelanjaan", label: "Perbelanjaan" },
-    { value: "keamanan", label: "Keamanan" },
-    { value: "taman", label: "Taman" },
-    { value: "default", label: "Lainnya" },
+    { value: "all", label: "Semua Kategori", icon: Filter, color: "#6b7280" },
+    { value: "pemerintahan", label: "Pemerintahan", icon: Landmark, color: "#2563eb" },
+    { value: "pendidikan", label: "Pendidikan", icon: School, color: "#4f46e5" },
+    { value: "kesehatan", label: "Kesehatan", icon: Stethoscope, color: "#ef4444" },
+    { value: "ibadah", label: "Ibadah", icon: BookHeart, color: "#059669" },
+    { value: "kuliner", label: "Kuliner", icon: Utensils, color: "#f97316" },
+    { value: "warkop", label: "Warkop", icon: Coffee, color: "#b45309" },
+    { value: "perbelanjaan", label: "Perbelanjaan", icon: Store, color: "#0ea5e9" },
+    { value: "keamanan", label: "Keamanan", icon: ShieldCheck, color: "#334155" },
+    { value: "taman", label: "Taman", icon: Trees, color: "#16a34a" },
+    { value: "olahraga", label: "Olahraga", icon: Trophy, color: "#eab308" },
+    { value: "rumahku", label: "Rumahku", icon: Home, color: "#9333ea" },
+    { value: "default", label: "Lainnya", icon: Circle, color: "#6b7280" },
 ];
 
-const createCustomIcon = (category: string) => {
+// Fungsi untuk mengecek apakah titik berada di dalam polygon (ray-casting algorithm)
+const isPointInPolygon = (point: [number, number], polygon: [number, number][]) => {
+    const [x, y] = point;
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const [xi, yi] = polygon[i];
+        const [xj, yj] = polygon[j];
+
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+            inside = !inside;
+        }
+    }
+
+    return inside;
+};
+
+const createCustomIcon = (category: string, name?: string) => {
     const iconMap: Record<string, { icon: any; color: string }> = {
         pemerintahan: { icon: Landmark, color: "#2563eb" }, // text-blue-600
         pendidikan: { icon: School, color: "#4f46e5" }, // text-indigo-600
@@ -40,6 +59,8 @@ const createCustomIcon = (category: string) => {
         perbelanjaan: { icon: Store, color: "#0ea5e9" }, // text-sky-500
         keamanan: { icon: ShieldCheck, color: "#334155" }, // text-slate-700
         taman: { icon: Trees, color: "#16a34a" }, // text-green-600
+        olahraga: { icon: Trophy, color: "#eab308" }, // text-yellow-500
+        rumahku: { icon: Home, color: "#9333ea" }, // text-purple-600
         default: { icon: Circle, color: "#6b7280" }, // text-gray-500
     };
 
@@ -47,30 +68,41 @@ const createCustomIcon = (category: string) => {
     const IconComponent = config.icon;
     const color = config.color;
 
-    // Google Maps Style Pin with Icon inside
+    // Google Maps Style Pin with Icon inside + Label
     const iconHtml = renderToStaticMarkup(
-        <div className="relative flex items-center justify-center w-[40px] h-[40px]">
-            {/* Pin Shape */}
-            <svg viewBox="0 0 384 512" className="w-10 h-10 drop-shadow-md">
-                <path
-                    d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0z"
-                    fill={color}
-                    stroke="white"
-                    strokeWidth="12"
-                />
-            </svg>
-            {/* Creating a white circle background for icon */}
-            <div className="absolute top-[6px] bg-white/20 rounded-full w-6 h-6 flex items-center justify-center">
-                <IconComponent size={16} strokeWidth={2.5} color="white" />
+        <div className="relative flex flex-col items-center">
+            {/* Pin dengan Icon */}
+            <div className="relative flex items-center justify-center w-[40px] h-[40px]">
+                {/* Pin Shape */}
+                <svg viewBox="0 0 384 512" className="w-10 h-10 drop-shadow-md">
+                    <path
+                        d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0z"
+                        fill={color}
+                        stroke="white"
+                        strokeWidth="12"
+                    />
+                </svg>
+                {/* Creating a white circle background for icon */}
+                <div className="absolute top-[6px] bg-white/20 rounded-full w-6 h-6 flex items-center justify-center">
+                    <IconComponent size={16} strokeWidth={2.5} color="white" />
+                </div>
             </div>
+            {/* Label nama lokasi */}
+            {name && (
+                <div className="absolute top-[42px] left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    <span className="bg-white/95 px-2 py-0.5 rounded text-xs font-semibold shadow-md border text-gray-800" style={{ textShadow: '0 0 2px white' }}>
+                        {name.length > 20 ? name.slice(0, 20) + '...' : name}
+                    </span>
+                </div>
+            )}
         </div>
     );
 
     return new DivIcon({
         html: iconHtml,
         className: 'bg-transparent',
-        iconSize: [40, 40],
-        iconAnchor: [20, 40], // Center bottom
+        iconSize: [40, name ? 60 : 40],
+        iconAnchor: [20, 40], // Center bottom of pin
         popupAnchor: [0, -40],
     });
 };
@@ -88,6 +120,15 @@ export interface Location {
 export interface MapProps {
     geoJson: any; // The bulusidokare feature collection
     locations: Location[];
+}
+
+interface MapConfig {
+    mapSettings: {
+        tileSource: 'online' | 'offline';
+        offlineTileUrl: string;
+        onlineTileUrl: string;
+        fallbackToOnline: boolean;
+    };
 }
 
 export default function Map({ geoJson, locations }: MapProps) {
@@ -113,6 +154,27 @@ export default function Map({ geoJson, locations }: MapProps) {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [mapRef, setMapRef] = useState<L.Map | null>(null);
     const searchContainerRef = useRef<HTMLDivElement>(null);
+
+    // Tile config state
+    const [tileConfig, setTileConfig] = useState<MapConfig['mapSettings'] | null>(null);
+
+    // Fetch config on mount
+    useEffect(() => {
+        fetch('/config.json')
+            .then(res => res.json())
+            .then((config: MapConfig) => {
+                setTileConfig(config.mapSettings);
+            })
+            .catch(() => {
+                // Default fallback jika config tidak ditemukan
+                setTileConfig({
+                    tileSource: 'offline',
+                    offlineTileUrl: '/tiles/{z}/{x}/{y}.png',
+                    onlineTileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    fallbackToOnline: true
+                });
+            });
+    }, []);
 
     // Debounce search
     useEffect(() => {
@@ -172,6 +234,15 @@ export default function Map({ geoJson, locations }: MapProps) {
     // --- Actions ---
 
     const handleMapContextMenu = (latlng: LatLngTuple, event: L.LeafletMouseEvent) => {
+        // Validasi: titik harus berada di dalam hole (area yang diizinkan)
+        const polygonCoords = hole.map((coord: LatLngTuple) => [coord[0], coord[1]] as [number, number]);
+        const isInside = isPointInPolygon([latlng[0], latlng[1]], polygonCoords);
+
+        // Jika di luar hole, tidak tampilkan context menu
+        if (!isInside) {
+            return;
+        }
+
         setContextMenu({
             x: event.originalEvent.clientX,
             y: event.originalEvent.clientY,
@@ -192,8 +263,21 @@ export default function Map({ geoJson, locations }: MapProps) {
 
     const openAddDialog = () => {
         if (contextMenu?.mode === 'map' && contextMenu.data) {
-            setSelectedPos(contextMenu.data);
-            setFormData({ name: '', description: '', category: 'default' });
+            const latlng = contextMenu.data as LatLngTuple;
+            setSelectedPos(latlng);
+
+            // Load draft jika ada (silent, tanpa notifikasi)
+            const savedDraft = localStorage.getItem('locationFormDraft');
+            if (savedDraft) {
+                try {
+                    const draft = JSON.parse(savedDraft);
+                    setFormData(draft);
+                } catch {
+                    setFormData({ name: '', description: '', category: 'default' });
+                }
+            } else {
+                setFormData({ name: '', description: '', category: 'default' });
+            }
             setIsAddDialogOpen(true);
             setContextMenu(null);
         }
@@ -322,22 +406,26 @@ export default function Map({ geoJson, locations }: MapProps) {
                         {showSuggestions && suggestions.length > 0 && (
                             <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg max-h-64 overflow-hidden z-[6000]">
                                 <ScrollArea className="max-h-64">
-                                    {suggestions.map((loc) => (
-                                        <div
-                                            key={loc.id}
-                                            className="px-3 py-2 hover:bg-accent cursor-pointer border-b last:border-b-0 flex items-center gap-2"
-                                            onClick={() => flyToLocation(loc)}
-                                        >
-                                            <MapPin size={14} className="text-muted-foreground flex-shrink-0" />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-sm truncate">{loc.name}</div>
-                                                <div className="text-xs text-muted-foreground truncate">
-                                                    {loc.category?.replace('_', ' ') || 'Lainnya'}
-                                                    {loc.description && ` • ${loc.description}`}
+                                    {suggestions.map((loc) => {
+                                        const catConfig = CATEGORIES.find(c => c.value === loc.category) || CATEGORIES.find(c => c.value === 'default')!;
+                                        const IconComponent = catConfig.icon;
+                                        return (
+                                            <div
+                                                key={loc.id}
+                                                className="px-3 py-2 hover:bg-accent cursor-pointer border-b last:border-b-0 flex items-center gap-2"
+                                                onClick={() => flyToLocation(loc)}
+                                            >
+                                                <IconComponent size={14} style={{ color: catConfig.color }} className="flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-medium text-sm truncate">{loc.name}</div>
+                                                    <div className="text-xs text-muted-foreground truncate">
+                                                        {loc.category?.replace('_', ' ') || 'Lainnya'}
+                                                        {loc.description && ` • ${loc.description}`}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </ScrollArea>
                             </div>
                         )}
@@ -348,24 +436,23 @@ export default function Map({ geoJson, locations }: MapProps) {
                         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                             <SelectTrigger className="w-full bg-background/50">
                                 <div className="flex items-center gap-2">
-                                    <Filter className="h-4 w-4" />
                                     <SelectValue placeholder="Pilih Kategori" />
                                 </div>
                             </SelectTrigger>
                             <SelectContent>
-                                {CATEGORIES.map((cat) => (
-                                    <SelectItem key={cat.value} value={cat.value}>
-                                        {cat.label}
-                                    </SelectItem>
-                                ))}
+                                {CATEGORIES.map((cat) => {
+                                    const IconComponent = cat.icon;
+                                    return (
+                                        <SelectItem key={cat.value} value={cat.value}>
+                                            <div className="flex items-center gap-2">
+                                                <IconComponent size={16} style={{ color: cat.color }} />
+                                                {cat.label}
+                                            </div>
+                                        </SelectItem>
+                                    );
+                                })}
                             </SelectContent>
                         </Select>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                        <div className="text-xs text-muted-foreground px-1">
-                            Menampilkan {filteredLocations.length} lokasi
-                        </div>
                     </div>
                 </div>
             </div>
@@ -405,12 +492,15 @@ export default function Map({ geoJson, locations }: MapProps) {
                 </div>
             )}
 
-            <MapContainer center={center} zoom={16} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} attributionControl={false} ref={setMapRef}>
-                {/* Tile lokal dengan fallback ke online */}
-                <TileLayer
-                    url="/tiles/{z}/{x}/{y}.png"
-                    errorTileUrl="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+            <MapContainer center={center} zoom={16} minZoom={15} maxZoom={19} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} attributionControl={false} ref={setMapRef}>
+                {/* Tile dengan config dari public/config.json */}
+                {tileConfig && (
+                    <TileLayer
+                        url={tileConfig.tileSource === 'offline' ? tileConfig.offlineTileUrl : tileConfig.onlineTileUrl}
+                        errorTileUrl={tileConfig.fallbackToOnline ? tileConfig.onlineTileUrl : undefined}
+                        maxZoom={19}
+                    />
+                )}
                 <Polygon positions={maskPositions as any} pathOptions={{ color: 'transparent', fillColor: 'black', fillOpacity: 0.7 }} />
                 <Polygon positions={hole} pathOptions={{ color: '#ec4899', weight: 2, fill: false, dashArray: '5, 10' }} />
 
@@ -418,7 +508,7 @@ export default function Map({ geoJson, locations }: MapProps) {
                     <Marker
                         key={loc.id}
                         position={[loc.latitude, loc.longitude]}
-                        icon={createCustomIcon(loc.category || 'default')}
+                        icon={createCustomIcon(loc.category || 'default', loc.name)}
                         eventHandlers={{
                             contextmenu: (e) => handleMarkerContextMenu(loc, e)
                         }}

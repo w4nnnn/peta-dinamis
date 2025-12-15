@@ -1,0 +1,8 @@
+{
+    "mapSettings": {
+        "tileSource": "offline",
+        "offlineTileUrl": "/tiles/{z}/{x}/{y}.png",
+        "onlineTileUrl": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "fallbackToOnline": true
+    }
+}

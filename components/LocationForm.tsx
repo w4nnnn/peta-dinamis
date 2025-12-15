@@ -4,6 +4,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useEffect, useCallback } from 'react';
+import { Landmark, School, Stethoscope, BookHeart, Utensils, Coffee, Store, ShieldCheck, Trees, Trophy, Circle, Home } from 'lucide-react';
+
+const FORM_CATEGORIES = [
+    { value: "pemerintahan", label: "Pemerintahan", icon: Landmark, color: "#2563eb" },
+    { value: "pendidikan", label: "Pendidikan", icon: School, color: "#4f46e5" },
+    { value: "kesehatan", label: "Kesehatan", icon: Stethoscope, color: "#ef4444" },
+    { value: "ibadah", label: "Ibadah", icon: BookHeart, color: "#059669" },
+    { value: "kuliner", label: "Kuliner", icon: Utensils, color: "#f97316" },
+    { value: "warkop", label: "Warkop", icon: Coffee, color: "#b45309" },
+    { value: "perbelanjaan", label: "Perbelanjaan", icon: Store, color: "#0ea5e9" },
+    { value: "keamanan", label: "Keamanan", icon: ShieldCheck, color: "#334155" },
+    { value: "taman", label: "Taman", icon: Trees, color: "#16a34a" },
+    { value: "olahraga", label: "Olahraga", icon: Trophy, color: "#eab308" },
+    { value: "rumahku", label: "Rumahku", icon: Home, color: "#9333ea" },
+    { value: "default", label: "Lainnya", icon: Circle, color: "#6b7280" },
+];
 
 interface LocationFormProps {
     formData: {
@@ -15,11 +32,45 @@ interface LocationFormProps {
     onSubmit: (e: React.FormEvent) => void;
     isSubmitting: boolean;
     submitLabel?: string;
+    enableDraft?: boolean;
 }
 
-export function LocationForm({ formData, setFormData, onSubmit, isSubmitting, submitLabel = "Simpan Lokasi" }: LocationFormProps) {
+const DRAFT_KEY = 'locationFormDraft';
+
+export function LocationForm({
+    formData,
+    setFormData,
+    onSubmit,
+    isSubmitting,
+    submitLabel = "Simpan Lokasi",
+    enableDraft = true
+}: LocationFormProps) {
+
+    // Auto-save draft saat formData berubah
+    useEffect(() => {
+        if (enableDraft && (formData.name || formData.description)) {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+        }
+    }, [formData, enableDraft]);
+
+    // Clear draft
+    const clearDraft = useCallback(() => {
+        localStorage.removeItem(DRAFT_KEY);
+        setFormData({ name: '', description: '', category: 'default' });
+    }, [setFormData]);
+
+    // Handle submit dengan clear draft
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        localStorage.removeItem(DRAFT_KEY); // Clear draft setelah submit
+        onSubmit(e);
+    };
+
+    // Cek apakah ada draft
+    const hasDraft = enableDraft && (formData.name || formData.description);
+
     return (
-        <form onSubmit={onSubmit} className="space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="name">Nama Lokasi</Label>
                 <Input
@@ -38,16 +89,17 @@ export function LocationForm({ formData, setFormData, onSubmit, isSubmitting, su
                         <SelectValue placeholder="Pilih Kategori" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="pemerintahan">Pemerintahan</SelectItem>
-                        <SelectItem value="pendidikan">Pendidikan</SelectItem>
-                        <SelectItem value="kesehatan">Kesehatan</SelectItem>
-                        <SelectItem value="ibadah">Ibadah</SelectItem>
-                        <SelectItem value="kuliner">Kuliner</SelectItem>
-                        <SelectItem value="warkop">Warkop</SelectItem>
-                        <SelectItem value="perbelanjaan">Perbelanjaan</SelectItem>
-                        <SelectItem value="keamanan">Keamanan</SelectItem>
-                        <SelectItem value="taman">Taman</SelectItem>
-                        <SelectItem value="default">Lainnya</SelectItem>
+                        {FORM_CATEGORIES.map((cat) => {
+                            const IconComponent = cat.icon;
+                            return (
+                                <SelectItem key={cat.value} value={cat.value}>
+                                    <div className="flex items-center gap-2">
+                                        <IconComponent size={16} style={{ color: cat.color }} />
+                                        {cat.label}
+                                    </div>
+                                </SelectItem>
+                            );
+                        })}
                     </SelectContent>
                 </Select>
             </div>
@@ -61,6 +113,7 @@ export function LocationForm({ formData, setFormData, onSubmit, isSubmitting, su
                     placeholder="Keterangan singkat..."
                 />
             </div>
+
             <DialogFooter>
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? 'Memproses...' : submitLabel}
