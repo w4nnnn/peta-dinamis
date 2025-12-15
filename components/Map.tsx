@@ -501,7 +501,7 @@ export default function Map({ geoJson, locations }: MapProps) {
                         maxZoom={19}
                     />
                 )}
-                <Polygon positions={maskPositions as any} pathOptions={{ color: 'transparent', fillColor: 'black', fillOpacity: 0.7 }} />
+                <Polygon positions={maskPositions as any} pathOptions={{ color: 'transparent', fillColor: 'black', fillOpacity: 0.8 }} />
                 <Polygon positions={hole} pathOptions={{ color: '#ec4899', weight: 2, fill: false, dashArray: '5, 10' }} />
 
                 {filteredLocations.map((loc) => (

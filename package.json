@@ -1,11 +1,11 @@
 {
   "name": "peta-dinamis",
-  "version": "0.1.0",
+  "version": "2.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 4353",
     "lint": "eslint",
     "download-tiles": "node scripts/download-tiles.mjs"
   },

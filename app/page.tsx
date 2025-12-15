@@ -33,7 +33,7 @@ export default async function Home() {
         </div>
       )}
 
-      <Toaster />
+      <Toaster position="top-center" />
     </main>
   );
 }
