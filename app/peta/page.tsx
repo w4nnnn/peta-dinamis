@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { getLocations } from '@/actions/location';
+import { getSession } from '@/actions/auth';
 import { Toaster } from '@/components/ui/sonner';
 import MapWrapper from '@/components/MapWrapper';
 
@@ -16,13 +17,15 @@ export default async function PetaPage() {
     }
 
     const { data: locations } = await getLocations();
+    const session = await getSession();
+    const isAdmin = !!session;
 
     return (
         <main className="relative w-screen h-screen overflow-hidden bg-background">
 
             {geoJson ? (
                 <div className="w-full h-full">
-                    <MapWrapper geoJson={geoJson} locations={locations || []} />
+                    <MapWrapper geoJson={geoJson} locations={locations || []} isAdmin={isAdmin} />
                 </div>
             ) : (
                 <div className="flex items-center justify-center w-full h-full p-4">

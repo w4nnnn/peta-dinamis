@@ -18,6 +18,14 @@ const Map = dynamic(() => import('@/components/Map'), {
     )
 });
 
-export default function MapWrapper(props: MapProps) {
-    return <Map {...props} />;
+export interface MapWrapperProps extends MapProps {
+    isAdmin?: boolean;
+    minZoom?: number;
+    initialZoom?: number;
 }
+
+export default function MapWrapper({ isAdmin = false, minZoom = 17, initialZoom = 17, ...props }: MapWrapperProps) {
+    return <Map {...props} isAdmin={isAdmin} minZoom={minZoom} initialZoom={initialZoom} />;
+}
+
+

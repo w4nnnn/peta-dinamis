@@ -14,7 +14,7 @@ export default function AboutSection() {
             icon: MapPin,
             title: 'Lokasi Strategis',
             description:
-                'Terletak di pusat Kecamatan Sidoarjo dengan akses mudah ke berbagai fasilitas publik dan pusat pemerintahan.',
+                'Berjarak hanya 2 km dari Alun-Alun Sidoarjo, sebagai penyangga ring satu pusat pemerintahan dengan akses mudah ke fasilitas publik.',
         },
         {
             icon: Users,
@@ -60,9 +60,9 @@ export default function AboutSection() {
                         </span>
                     </h2>
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                        Kelurahan Bulusidokare adalah salah satu kelurahan di Kecamatan Sidoarjo,
-                        Kabupaten Sidoarjo, Provinsi Jawa Timur. Kelurahan ini memiliki sejarah
-                        panjang dan menjadi bagian penting dari perkembangan wilayah Sidoarjo.
+                        Kelurahan Bulusidokare terletak di Kecamatan Sidoarjo, Kabupaten Sidoarjo, Jawa Timur.
+                        Berada pada koordinat 7°27′37″ LS dan 112°43′27″ BT, wilayah ini menyimpan
+                        lapisan sejarah "Sidokare" kuno—nama asli kawasan Sidoarjo sebelum era kolonial Belanda.
                     </p>
                 </motion.div>
 
@@ -97,21 +97,21 @@ export default function AboutSection() {
                     <div className="grid md:grid-cols-3 gap-8 text-center">
                         <div>
                             <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
-                                1965
+                                1859
                             </div>
-                            <div className="text-muted-foreground">Tahun Terbentuk</div>
+                            <div className="text-muted-foreground">Sidoarjo Diresmikan</div>
                         </div>
                         <div>
                             <div className="text-4xl font-bold text-teal-600 dark:text-teal-400 mb-2">
-                                124 Ha
+                                144 Ha
                             </div>
                             <div className="text-muted-foreground">Luas Wilayah</div>
                         </div>
                         <div>
                             <div className="text-4xl font-bold text-cyan-600 dark:text-cyan-400 mb-2">
-                                3,000+
+                                8 RW / 48 RT
                             </div>
-                            <div className="text-muted-foreground">Kepala Keluarga</div>
+                            <div className="text-muted-foreground">Struktur Wilayah</div>
                         </div>
                     </div>
                 </motion.div>

@@ -141,10 +141,10 @@ export default function HeroSection() {
                         className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto"
                     >
                         {[
-                            { value: '1.24', unit: 'km²', label: 'Luas Wilayah' },
-                            { value: '6', unit: 'RW', label: 'Rukun Warga' },
-                            { value: '36', unit: 'RT', label: 'Rukun Tetangga' },
-                            { value: '9K+', unit: '', label: 'Penduduk' },
+                            { value: '144', unit: 'Ha', label: 'Luas Wilayah' },
+                            { value: '8', unit: 'RW', label: 'Rukun Warga' },
+                            { value: '48', unit: 'RT', label: 'Rukun Tetangga' },
+                            { value: '2', unit: 'mdpl', label: 'Elevasi' },
                         ].map((stat, index) => (
                             <motion.div
                                 key={stat.label}

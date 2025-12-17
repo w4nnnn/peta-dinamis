@@ -120,6 +120,9 @@ export interface Location {
 export interface MapProps {
     geoJson: any; // The bulusidokare feature collection
     locations: Location[];
+    isAdmin?: boolean; // Kontrol akses admin untuk edit/delete
+    minZoom?: number; // Minimum zoom level (default: 17)
+    initialZoom?: number; // Initial zoom level (default: 17)
 }
 
 interface MapConfig {
@@ -131,7 +134,7 @@ interface MapConfig {
     };
 }
 
-export default function Map({ geoJson, locations }: MapProps) {
+export default function Map({ geoJson, locations, isAdmin = false, minZoom = 17, initialZoom = 17 }: MapProps) {
     // Dialog states
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -231,9 +234,21 @@ export default function Map({ geoJson, locations }: MapProps) {
     const maskPositions = [worldBounds, hole];
     const center: LatLngExpression = [-7.4578, 112.7290];
 
+    // Hitung bounds dari koordinat GeoJSON untuk membatasi geser peta
+    const lats = hole.map((coord: LatLngTuple) => coord[0]);
+    const lngs = hole.map((coord: LatLngTuple) => coord[1]);
+    const padding = 0.005; // Sedikit padding agar tidak terlalu ketat
+    const maxBounds: [LatLngTuple, LatLngTuple] = [
+        [Math.min(...lats) - padding, Math.min(...lngs) - padding], // Southwest
+        [Math.max(...lats) + padding, Math.max(...lngs) + padding], // Northeast
+    ];
+
     // --- Actions ---
 
     const handleMapContextMenu = (latlng: LatLngTuple, event: L.LeafletMouseEvent) => {
+        // Jika bukan admin, tidak tampilkan context menu
+        if (!isAdmin) return;
+
         // Validasi: titik harus berada di dalam hole (area yang diizinkan)
         const polygonCoords = hole.map((coord: LatLngTuple) => [coord[0], coord[1]] as [number, number]);
         const isInside = isPointInPolygon([latlng[0], latlng[1]], polygonCoords);
@@ -252,6 +267,9 @@ export default function Map({ geoJson, locations }: MapProps) {
     };
 
     const handleMarkerContextMenu = (location: Location, event: L.LeafletMouseEvent) => {
+        // Jika bukan admin, tidak tampilkan context menu
+        if (!isAdmin) return;
+
         L.DomEvent.stopPropagation(event);
         setContextMenu({
             x: event.originalEvent.clientX,
@@ -492,7 +510,7 @@ export default function Map({ geoJson, locations }: MapProps) {
                 </div>
             )}
 
-            <MapContainer center={center} zoom={16} minZoom={15} maxZoom={19} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} attributionControl={false} ref={setMapRef}>
+            <MapContainer center={center} zoom={initialZoom} minZoom={minZoom} maxZoom={19} maxBounds={maxBounds} maxBoundsViscosity={1.0} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} attributionControl={false} ref={setMapRef}>
                 {/* Tile dengan config dari public/config.json */}
                 {tileConfig && (
                     <TileLayer
@@ -521,31 +539,33 @@ export default function Map({ geoJson, locations }: MapProps) {
                                 </div>
                                 <p className="text-sm text-gray-600 mb-3">{loc.description}</p>
 
-                                <div className="grid grid-cols-2 gap-2 border-t pt-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-7 text-xs gap-1"
-                                        onClick={() => {
-                                            setSelectedLocation(loc);
-                                            setFormData({ name: loc.name, description: loc.description || '', category: loc.category || 'default' });
-                                            setIsEditDialogOpen(true);
-                                        }}
-                                    >
-                                        <Edit size={12} /> Edit
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="h-7 text-xs gap-1"
-                                        onClick={() => {
-                                            setSelectedLocation(loc);
-                                            setIsDeleteDialogOpen(true);
-                                        }}
-                                    >
-                                        <Trash2 size={12} /> Hapus
-                                    </Button>
-                                </div>
+                                {isAdmin && (
+                                    <div className="grid grid-cols-2 gap-2 border-t pt-2">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-7 text-xs gap-1"
+                                            onClick={() => {
+                                                setSelectedLocation(loc);
+                                                setFormData({ name: loc.name, description: loc.description || '', category: loc.category || 'default' });
+                                                setIsEditDialogOpen(true);
+                                            }}
+                                        >
+                                            <Edit size={12} /> Edit
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="h-7 text-xs gap-1"
+                                            onClick={() => {
+                                                setSelectedLocation(loc);
+                                                setIsDeleteDialogOpen(true);
+                                            }}
+                                        >
+                                            <Trash2 size={12} /> Hapus
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </Popup>
                     </Marker>
@@ -584,11 +604,13 @@ export default function Map({ geoJson, locations }: MapProps) {
                 </DialogContent>
             </Dialog>
 
-            {/* TIP Badge */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:bottom-8 md:right-4 z-[400] bg-background/90 backdrop-blur border px-3 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs md:text-sm text-muted-foreground animate-in slide-in-from-bottom-5">
-                <Info size={16} className="text-blue-500" />
-                <span>Klik kanan / Tahan peta untuk tambah lokasi</span>
-            </div>
+            {/* TIP Badge - hanya tampil untuk admin */}
+            {isAdmin && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:bottom-8 md:right-4 z-[400] bg-background/90 backdrop-blur border px-3 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs md:text-sm text-muted-foreground animate-in slide-in-from-bottom-5">
+                    <Info size={16} className="text-blue-500" />
+                    <span>Klik kanan / Tahan peta untuk tambah lokasi</span>
+                </div>
+            )}
         </div>
     );
 }
