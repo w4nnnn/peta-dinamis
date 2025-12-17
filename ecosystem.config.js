@@ -1,7 +1,7 @@
 module.exports = {
     apps: [
         {
-            name: "peta-dinamis",
+            name: "bulusidokare-peta-dinamis",
             script: "npm",
             args: "start",
         },
