@@ -22,10 +22,12 @@ export interface MapWrapperProps extends MapProps {
     isAdmin?: boolean;
     minZoom?: number;
     initialZoom?: number;
+    showNavigation?: boolean;
+    onLogout?: () => void;
 }
 
-export default function MapWrapper({ isAdmin = false, minZoom = 17, initialZoom = 17, ...props }: MapWrapperProps) {
-    return <Map {...props} isAdmin={isAdmin} minZoom={minZoom} initialZoom={initialZoom} />;
+export default function MapWrapper({ isAdmin = false, minZoom = 17, initialZoom = 17, showNavigation = false, onLogout, ...props }: MapWrapperProps) {
+    return <Map {...props} isAdmin={isAdmin} minZoom={minZoom} initialZoom={initialZoom} showNavigation={showNavigation} onLogout={onLogout} />;
 }
 
 

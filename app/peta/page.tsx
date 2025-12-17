@@ -3,7 +3,7 @@ import path from 'path';
 import { getLocations } from '@/actions/location';
 import { getSession } from '@/actions/auth';
 import { Toaster } from '@/components/ui/sonner';
-import MapWrapper from '@/components/MapWrapper';
+import PetaClient from './PetaClient';
 
 export default async function PetaPage() {
     const geoJsonPath = path.join(process.cwd(), 'maps', 'bulusidokare.geojson');
@@ -25,7 +25,7 @@ export default async function PetaPage() {
 
             {geoJson ? (
                 <div className="w-full h-full">
-                    <MapWrapper geoJson={geoJson} locations={locations || []} isAdmin={isAdmin} />
+                    <PetaClient geoJson={geoJson} locations={locations || []} isAdmin={isAdmin} />
                 </div>
             ) : (
                 <div className="flex items-center justify-center w-full h-full p-4">
@@ -39,3 +39,4 @@ export default async function PetaPage() {
         </main>
     );
 }
+

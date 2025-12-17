@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { addLocation } from '@/actions/location';
 import { toast } from 'sonner';
-import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck, Info, X, Trophy, Home } from 'lucide-react';
+import { MapPin, Building2, Users, Trees, School, Plus, Edit, Trash2, ShoppingCart, Utensils, Hotel, Hospital, Circle, Search, Filter, Landmark, Stethoscope, BookHeart, Coffee, Store, ShieldCheck, Info, X, Trophy, Home, ArrowLeft, LogOut } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -123,6 +123,8 @@ export interface MapProps {
     isAdmin?: boolean; // Kontrol akses admin untuk edit/delete
     minZoom?: number; // Minimum zoom level (default: 17)
     initialZoom?: number; // Initial zoom level (default: 17)
+    showNavigation?: boolean; // Tampilkan tombol kembali dan logout
+    onLogout?: () => void; // Callback untuk logout
 }
 
 interface MapConfig {
@@ -134,7 +136,7 @@ interface MapConfig {
     };
 }
 
-export default function Map({ geoJson, locations, isAdmin = false, minZoom = 17, initialZoom = 17 }: MapProps) {
+export default function Map({ geoJson, locations, isAdmin = false, minZoom = 17, initialZoom = 17, showNavigation = false, onLogout }: MapProps) {
     // Dialog states
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -389,8 +391,30 @@ export default function Map({ geoJson, locations, isAdmin = false, minZoom = 17,
 
     return (
         <div className="relative w-full h-full overflow-hidden">
+            {/* Back Button - Kiri Atas */}
+            {showNavigation && (
+                <a
+                    href="/"
+                    className="absolute top-4 left-4 z-[5000] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2.5 rounded-lg shadow-lg border hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                    <ArrowLeft size={20} />
+                    <span className="hidden sm:inline text-sm font-medium">Kembali</span>
+                </a>
+            )}
+
+            {/* Logout Button - Kiri Bawah (hanya untuk admin) */}
+            {showNavigation && isAdmin && onLogout && (
+                <button
+                    onClick={onLogout}
+                    className="absolute bottom-6 left-4 z-[5000] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 py-2 rounded-lg shadow-lg border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-colors flex items-center gap-2 text-sm font-medium"
+                >
+                    <LogOut size={18} />
+                    <span>Logout</span>
+                </button>
+            )}
+
             {/* Floating Search & Filter Control */}
-            <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 z-[5000] md:w-full md:max-w-sm">
+            <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 z-[5000] md:w-full md:max-w-sm" style={{ left: showNavigation ? 'auto' : undefined }}>
                 <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-3 rounded-lg shadow-lg border space-y-3">
                     {/* Search with Dropdown */}
                     <div ref={searchContainerRef} className="relative">
