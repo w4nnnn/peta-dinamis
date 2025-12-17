@@ -390,8 +390,8 @@ export default function Map({ geoJson, locations, isAdmin = false, minZoom = 17,
     return (
         <div className="relative w-full h-full overflow-hidden">
             {/* Floating Search & Filter Control */}
-            <div className="absolute top-4 right-4 z-[5000] w-full max-w-sm">
-                <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-3 rounded-lg shadow-lg border mx-4 md:mx-0 space-y-3">
+            <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 z-[5000] md:w-full md:max-w-sm">
+                <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-3 rounded-lg shadow-lg border space-y-3">
                     {/* Search with Dropdown */}
                     <div ref={searchContainerRef} className="relative">
                         <div className="relative">
@@ -510,7 +510,7 @@ export default function Map({ geoJson, locations, isAdmin = false, minZoom = 17,
                 </div>
             )}
 
-            <MapContainer center={center} zoom={initialZoom} minZoom={minZoom} maxZoom={19} maxBounds={maxBounds} maxBoundsViscosity={1.0} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} attributionControl={false} ref={setMapRef}>
+            <MapContainer center={center} zoom={initialZoom} minZoom={minZoom} maxZoom={19} maxBounds={maxBounds} maxBoundsViscosity={1.0} scrollWheelZoom={true} zoomControl={false} style={{ height: '100%', width: '100%' }} attributionControl={false} ref={setMapRef}>
                 {/* Tile dengan config dari public/config.json */}
                 {tileConfig && (
                     <TileLayer
